@@ -75,7 +75,6 @@ Mat inverseImg(Mat im)
 int getContoursByCplus(Mat src, double minarea = 5, double whRatio = 10)
 {
 	Mat dst, canny_output;
-	/// Load source image and convert it to gray  
 
 	if (!src.data)
 	{
@@ -84,17 +83,12 @@ int getContoursByCplus(Mat src, double minarea = 5, double whRatio = 10)
 	}
 	blur(src, src, Size(3, 3));
 
-
-	//the pram. for findContours,  
 	vector<vector<Point> > contours;
 	vector<vector<Point> > retContours;
 	vector<Vec4i> hierarchy;
 
-	/// Detect edges using canny  
 	Canny(src, canny_output, Otsu(src), 255, 3);
-	/// Find contours  
 	findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
-	//CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE  
 
 	cout << "contours" << contours.size() << endl;
 	for (int i = 0; i<contours.size(); i++)
@@ -111,7 +105,7 @@ int getContoursByCplus(Mat src, double minarea = 5, double whRatio = 10)
 		retContours.push_back(contours[i]);
 
 	}
-	/// Draw contours,彩色轮廓  
+
 	dst = Mat::zeros(canny_output.size(), CV_8UC3);
 
 	double contour_area_tmp(0), contour_area_max(0), contour_area_min(0), contour_area_sum(0);
@@ -126,13 +120,11 @@ int getContoursByCplus(Mat src, double minarea = 5, double whRatio = 10)
 		if (contour_area_tmp > contour_area_max)
 		{
 			contour_area_max = contour_area_tmp; //找到面积最大的轮廓
-
 		}
 
 		if (contour_area_tmp < contour_area_min || contour_area_min == 0)
 		{
 			contour_area_min = contour_area_tmp; //找到面积最小的轮廓
-
 		}
 
 		contour_area_sum += contour_area_tmp; //求所有轮廓的面积和
