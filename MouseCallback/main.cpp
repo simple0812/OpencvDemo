@@ -1,10 +1,8 @@
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
+#include "iostream"
 
-#include <iostream>
-
-using namespace std;
 using namespace cv;
+using namespace std;
 
 
 
@@ -74,14 +72,14 @@ Mat inverseImg(Mat im)
 	return newBImg.clone();
 }
 
-int getContoursByCplus(Mat src, double minarea = 100, double whRatio = 1)
+int getContoursByCplus(Mat src, double minarea = 5, double whRatio = 10)
 {
 	Mat dst, canny_output;
 	/// Load source image and convert it to gray  
 
 	if (!src.data)
 	{
-		std::cout << "read data error!" << std::endl;
+		cout << "read data error!" << endl;
 		return -1;
 	}
 	blur(src, src, Size(3, 3));
@@ -89,56 +87,41 @@ int getContoursByCplus(Mat src, double minarea = 100, double whRatio = 1)
 
 	//the pram. for findContours,  
 	vector<vector<Point> > contours;
+	vector<vector<Point> > retContours;
 	vector<Vec4i> hierarchy;
 
 	/// Detect edges using canny  
 	Canny(src, canny_output, Otsu(src), 255, 3);
 	/// Find contours  
-	findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+	findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 	//CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE  
 
-	double maxarea = 0;
-	int maxAreaIdx = 0;
-
+	cout << "contours" << contours.size() << endl;
 	for (int i = 0; i<contours.size(); i++)
 	{
 
 		double tmparea = fabs(contourArea(contours[i]));
-		if (tmparea>maxarea)
+		Rect aRect = boundingRect(contours[i]);
+
+		if (tmparea < minarea || (aRect.width / aRect.height) > whRatio)
 		{
-			maxarea = tmparea;
-			maxAreaIdx = i;
 			continue;
 		}
 
-		if (tmparea < minarea)
-		{
-			//删除面积小于设定值的轮廓  
-			contours.erase(contours.begin() + i);
-			//std::wcout << "delete a small area" << std::endl;
-			continue;
-		}
-		//计算轮廓的直径宽高  
-		Rect aRect = boundingRect(contours[i]);
-		if ((aRect.width / aRect.height)<whRatio)
-		{
-			//删除宽高比例小于设定值的轮廓  
-			contours.erase(contours.begin() + i);
-			//std::wcout << "delete a unnomalRatio area" << std::endl;
-			continue;
-		}
+		retContours.push_back(contours[i]);
+
 	}
 	/// Draw contours,彩色轮廓  
 	dst = Mat::zeros(canny_output.size(), CV_8UC3);
 
 	double contour_area_tmp(0), contour_area_max(0), contour_area_min(0), contour_area_sum(0);
 
-	for (int i = 0; i< contours.size(); i++)
+	for (int i = 0; i< retContours.size(); i++)
 	{
-		drawContours(dst, contours, i, Scalar(255, 255, 0), 1, 8, hierarchy, 0, Point());
+		drawContours(dst, retContours, i, Scalar(255, 255, 0), 1, 8, hierarchy, 0, Point());
 
 
-		contour_area_tmp = fabs(contourArea(contours[i])); //获取当前轮廓面积
+		contour_area_tmp = fabs(contourArea(retContours[i])); //获取当前轮廓面积
 
 		if (contour_area_tmp > contour_area_max)
 		{
@@ -156,13 +139,13 @@ int getContoursByCplus(Mat src, double minarea = 100, double whRatio = 1)
 	}
 
 
-	cout << "count->" << contours.size() << endl;
+	cout << "count->" << retContours.size() << endl;
 	cout << "contour_area_max->" << contour_area_max << endl;
 	cout << "contour_area_min->" << contour_area_min << endl;
-	cout << "contour_area_av->" << contour_area_sum / contours.size() << endl;
+	if(retContours.size() > 0)
+		cout << "contour_area_av->" << contour_area_sum / retContours.size() << endl;
 
 
-	// Create Window  
 	char* source_window = "countors";
 	namedWindow(source_window, CV_WINDOW_AUTOSIZE);
 	imshow(source_window, dst);
