@@ -71,136 +71,6 @@ Mat inverseImg(Mat im)
 	return newBImg.clone();
 }
 
-static int getContoursByC(char* Imgname, double minarea=100, double whRatio=1)
-{
-	IplImage* src = cvLoadImage(Imgname, CV_LOAD_IMAGE_GRAYSCALE);
-	if (!src)
-	{
-		printf("read data error!\n");
-		return -1;
-	}
-	IplImage* dst = cvCreateImage(cvGetSize(src), 8, 3);
-
-	//the parm. for cvFindContours  
-	CvMemStorage* storage = cvCreateMemStorage(0);
-	CvSeq* contour = 0;
-	double maxarea = 0;
-
-	//for display  
-	cvNamedWindow("Source", CV_WINDOW_NORMAL);
-	cvShowImage("Source", src);
-
-	//二值化  
-	cvThreshold(src, src, 120, 255, CV_THRESH_BINARY);
-
-	//提取轮廓  
-	cvFindContours(src, storage, &contour, sizeof(CvContour), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-	cvZero(dst);//清空数组  
-
-				/*CvSeq* _contour为了保存轮廓的首指针位置，因为随后contour将用来迭代*/
-	CvSeq* _contour = contour;
-
-
-	int maxAreaIdx = -1, iteratorIdx = 0, xIndex = 0;//n为面积最大轮廓索引，m为迭代索引  
-	for (int iteratorIdx = 0; contour != 0; contour = contour->h_next, iteratorIdx++/*更新迭代索引*/)
-	{
-
-		double tmparea = fabs(cvContourArea(contour));
-		if (tmparea > maxarea)
-		{
-			xIndex++;
-			maxarea = tmparea;
-			maxAreaIdx = iteratorIdx;
-			continue;
-		}
-		if (tmparea < minarea)
-		{
-			//删除面积小于设定值的轮廓  
-			cvSeqRemove(contour, 0);
-			continue;
-		}
-		CvRect aRect = cvBoundingRect(contour, 0);
-		if ((aRect.width / aRect.height)<whRatio)
-		{
-			//删除宽高比例小于设定值的轮廓  
-			cvSeqRemove(contour, 0);
-			continue;
-		}
-		//CvScalar color = CV_RGB( rand()&255, rand()&255, rand()&255 );//创建一个色彩值  
-		//CvScalar color = CV_RGB(0, 255, 255);  
-
-		//max_level 绘制轮廓的最大等级。如果等级为0，绘制单独的轮廓。如果为1，绘制轮廓及在其后的相同的级别下轮廓。  
-		//如果值为2，所有的轮廓。如果等级为2，绘制所有同级轮廓及所有低一级轮廓，诸此种种。  
-		//如果值为负数，函数不绘制同级轮廓，但会升序绘制直到级别为abs(max_level)-1的子轮廓。   
-		//cvDrawContours(dst, contour, color, color, -1, 1, 8);//绘制外部和内部的轮廓  
-	}
-	contour = _contour; /*int k=0;*/
-						//统计剩余轮廓，并画出最大面积的轮廓  
-	int count = 0;
-
-	while (contour != 0)
-	{
-		contour++;
-		double tmparea = fabs(cvContourArea(contour));
-		if (tmparea == maxarea )
-		{
-			CvScalar color = CV_RGB(255, 0, 0);
-			try
-			{
-				cvDrawContours(dst, contour, color, color, -1, 1, 8);
-
-			}
-			catch (const std::exception&)
-			{
-				//
-			}
-		}
-		else
-		{
-			CvScalar color = CV_RGB(255, 255, 0);
-			try
-			{
-				cvDrawContours(dst, contour, color, color, -1, 1, 8);
-
-			}
-			catch (const std::exception&)
-			{
-				//
-			}
-		}
-	}
-
-	for (; contour != 0; contour = contour->h_next)
-	{
-		count++;
-		double tmparea = fabs(cvContourArea(contour));
-		if (tmparea == maxarea /*k==n*/)
-		{
-			CvScalar color = CV_RGB(255, 0, 0);
-			cvDrawContours(dst, contour, color, color, -1, 1, 8);
-		}
-		else
-		{
-			CvScalar color = CV_RGB(255, 255, 0);
-			cvDrawContours(dst, contour, color, color, -1, 1, 8);
-		}
-		/*k++;*/
-	}
-
-	printf("The total number of contours is:%d", count);
-	cvNamedWindow("Components", CV_WINDOW_AUTOSIZE);
-	cvShowImage("Components", dst);
-	cvSaveImage("dst.jpg", dst);
-	//roateProcess(dst);  
-	cvWaitKey(0);
-	//销毁窗口和图像存储  
-	cvDestroyWindow("Source");
-	cvReleaseImage(&src);
-	cvDestroyWindow("Components");
-	cvReleaseImage(&dst);
-	return 0;
-}
-
 int getContoursByCplus(char* Imgname, double minarea = 100, double whRatio = 1)
 {
 	Mat src, dst, canny_output;
@@ -220,7 +90,7 @@ int getContoursByCplus(char* Imgname, double minarea = 100, double whRatio = 1)
 	vector<Vec4i> hierarchy;
 
 	/// Detect edges using canny  
-	Canny(src, canny_output, 80, 255, 3);
+	Canny(src, canny_output, Otsu(src), 255, 3);
 	/// Find contours  
 	findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 	//CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE  
@@ -281,12 +151,39 @@ int getContoursByCplus(char* Imgname, double minarea = 100, double whRatio = 1)
 
 int main(int argc, char **argv)
 {
-	char* filename = "e:/half_b.png";
+	char* filename = "e:/cell3.jpg";
 	Mat mat = imread(filename);
-	auto img = cvLoadImage(filename);
-	cvShowImage("xxx", img);
+	
+	Mat src, dst, canny_output;
 
-	getContoursByCplus(filename, 1000, 2);
+	bitwise_xor(mat, Scalar(255), src);
+	imshow("xxxx", src);
+
+	//the pram. for findContours,  
+	vector<vector<Point> > contours;
+	vector<Vec4i> hierarchy;
+
+	/// Detect edges using canny  
+	Canny(src, canny_output, 80, 255, 3);
+	/// Find contours  
+	findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+	//CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE  
+
+	dst = Mat::zeros(canny_output.size(), CV_8UC3);
+	for (int i = 0; i< contours.size(); i++)
+	{
+		RNG rng;
+		//随机颜色  
+		Scalar color = Scalar(255, 255, 0);
+		//Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
+		drawContours(dst, contours, i, color, 2, 8, hierarchy, 0, Point());
+	}
+
+	// Create Window  
+	char* source_window = "countors";
+	namedWindow(source_window, CV_WINDOW_AUTOSIZE);
+	imshow(source_window, dst);
+
 
 	waitKey(0);
 }

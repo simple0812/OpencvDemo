@@ -105,24 +105,25 @@ Mat inverseImg(Mat im)
 
 int main(int, char** argv)
 {
-	Mat src = imread("e:/red.jpg");
+	Mat src = imread("e:/cell4.jpg");
 	if (!src.data)
 		return -1;
 
 	imshow("Source Image", src);
 
+	Mat src1 = src.clone();
 	Mat kernelx = Mat::ones(3, 3, CV_8UC1);
-	dilate(src, src, kernelx);
-	dilate(src, src, kernelx);
-	dilate(src, src, kernelx);
+	dilate(src1, src1, kernelx);
+	dilate(src1, src1, kernelx);
+	dilate(src1, src1, kernelx);
 
-	/*blur(src, src, Size(3, 3));
-	blur(src, src, Size(3, 3));
-	blur(src, src, Size(3, 3));*/
+	/*blur(src1, src1, Size(3, 3));
+	blur(src1, src1, Size(3, 3));
+	blur(src1, src1, Size(3, 3));*/
 
-	medianBlur(src, src, 1);
-	medianBlur(src, src, 1);
-	medianBlur(src, src, 1);
+	medianBlur(src1, src1, 1);
+	medianBlur(src1, src1, 1);
+	medianBlur(src1, src1, 1);
 	//GaussianBlur(src, src, Size(5, 5), 200, 200);
 	//GaussianBlur(src, src, Size(5, 5), 200, 200);
 	//GaussianBlur(src, src, Size(5, 5), 200, 200);
@@ -131,7 +132,7 @@ int main(int, char** argv)
 	//erode(src, src, kernelx);
 	//erode(src, src, kernelx);
 
-	imshow("Source Imagxexx", src);
+	imshow("Source Imagxexx", src1);
 
 	//for (int x = 0; x < src.rows; x++) {
 	//	for (int y = 0; y < src.cols; y++) {
@@ -162,26 +163,26 @@ int main(int, char** argv)
 	//src = imgResult;
 
 	Mat bw;
-	cvtColor(src, bw, CV_BGR2GRAY);
+	cvtColor(src1, bw, CV_BGR2GRAY);
 	threshold(bw, bw, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-	//imshow("Binary Image", bw);
-	Mat dist;
-	distanceTransform(bw, dist, CV_DIST_L2, 3);
-	normalize(dist, dist, 0, 1., NORM_MINMAX);
-	//imshow("Distance Transform Image", dist);
+	imshow("Binary Image", bw);
+	Mat dist = bw;
+	//distanceTransform(bw, dist, CV_DIST_L2, 3);
+	//normalize(dist, dist, 0, 1., NORM_MINMAX);
+	imshow("Distance Transform Image", dist);
 
 
 	threshold(dist, dist, 0, 1., CV_THRESH_BINARY);
 	Mat kernel1 = Mat::ones(3, 3, CV_8UC1);
 	dilate(dist, dist, kernel1);
-	//imshow("Peaks", dist);
+	imshow("Peaks", dist);
 
 
 	Mat dist_8u;
 	dist.convertTo(dist_8u, CV_8U);
 	vector<vector<Point> > contours;
 	
-	findContours(dist_8u, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+	findContours(dist_8u, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
 	Mat markers = Mat::zeros(dist.size(), CV_32SC1);
 	for (size_t i = 0; i < contours.size(); i++) {
 		//drawContours(markers, contours, i, Scalar(255,0,0), 0);
