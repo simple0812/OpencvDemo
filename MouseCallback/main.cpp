@@ -115,7 +115,7 @@ int getContoursByCplus(Mat src, double minarea = 100, double whRatio = 1)
 		{
 			//删除面积小于设定值的轮廓  
 			contours.erase(contours.begin() + i);
-			std::wcout << "delete a small area" << std::endl;
+			//std::wcout << "delete a small area" << std::endl;
 			continue;
 		}
 		//计算轮廓的直径宽高  
@@ -131,22 +131,41 @@ int getContoursByCplus(Mat src, double minarea = 100, double whRatio = 1)
 	/// Draw contours,彩色轮廓  
 	dst = Mat::zeros(canny_output.size(), CV_8UC3);
 
-	cout << "count->" << contours.size() << endl;
+	double contour_area_tmp(0), contour_area_max(0), contour_area_min(0), contour_area_sum(0);
 
 	for (int i = 0; i< contours.size(); i++)
 	{
-		RNG rng;
-		//随机颜色  
-		Scalar color = Scalar(255, 255, 0);
-		//Scalar color = Scalar(rng.uniform(0, 255), rng.uniform(0, 255), rng.uniform(0, 255));
-		drawContours(dst, contours, i, color, 1, 8, hierarchy, 0, Point());
+		drawContours(dst, contours, i, Scalar(255, 255, 0), 1, 8, hierarchy, 0, Point());
+
+
+		contour_area_tmp = fabs(contourArea(contours[i])); //获取当前轮廓面积
+
+		if (contour_area_tmp > contour_area_max)
+		{
+			contour_area_max = contour_area_tmp; //找到面积最大的轮廓
+
+		}
+
+		if (contour_area_tmp < contour_area_min || contour_area_min == 0)
+		{
+			contour_area_min = contour_area_tmp; //找到面积最小的轮廓
+
+		}
+
+		contour_area_sum += contour_area_tmp; //求所有轮廓的面积和
 	}
+
+
+	cout << "count->" << contours.size() << endl;
+	cout << "contour_area_max->" << contour_area_max << endl;
+	cout << "contour_area_min->" << contour_area_min << endl;
+	cout << "contour_area_av->" << contour_area_sum / contours.size() << endl;
+
 
 	// Create Window  
 	char* source_window = "countors";
 	namedWindow(source_window, CV_WINDOW_AUTOSIZE);
 	imshow(source_window, dst);
-	//waitKey(0);
 
 	return 0;
 }
@@ -273,7 +292,7 @@ Mat GCApplication::showImage() const
 		circle(res, *it, radius, PINK, thickness);
 
 	if (rectState == IN_PROCESS || rectState == SET)
-		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), GREEN, 2);
+		rectangle(res, Point(rect.x, rect.y), Point(rect.x + rect.width, rect.y + rect.height), Scalar(0,0,0), 2);
 
 	imshow(*winName, res);
 
